@@ -1,0 +1,69 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>Ambit Laughter Tracker</title>
+    <script>
+        navigator.getUserMedia = (navigator.getUserMedia ||
+                       navigator.webkitGetUserMedia ||
+                       navigator.mozGetUserMedia ||
+                       navigator.msGetUserMedia);
+
+        var recording = false
+
+        audio_context = new AudioContext;
+        sampleRate = audio_context.sampleRate;
+        console.log(sampleRate)
+
+        function initializeRecorder(stream) {
+           var audioInput = audio_context.createMediaStreamSource(stream);
+           var bufferSize = 4096;
+           var recorder = audio_context.createScriptProcessor(bufferSize, 1, 1);
+           recorder.onaudioprocess = recorderProcess;
+           audioInput.connect(recorder);
+           recorder.connect(audio_context.destination);
+        }
+
+        var ws = new WebSocket('ws://127.0.0.1:8000/websocket');
+
+        ws.onopen = function(evt) {
+          console.log('Connected to websocket.');
+          // First message: send the sample rate
+          ws.send("sample rate:" + sampleRate);
+          navigator.getUserMedia({audio: true, video: false}, initializeRecorder, function(e) {
+           console.log('No live audio input: ' + e);
+          });
+        }
+
+        function convertFloat32ToInt16(buffer) {
+          l = buffer.length;
+          buf = new Int16Array(l);
+          while (l--) {
+            buf[l] = Math.min(1, buffer[l])*0x7FFF;
+          }
+          return buf.buffer;
+        }
+
+        function recorderProcess(e) {
+            if (recording) {
+                var left = e.inputBuffer.getChannelData(0);
+                ws.send(convertFloat32ToInt16(left));
+            }
+        }
+
+        function startRecording() {
+            recording = true
+        }
+
+        function stopRecording() {
+            recording = false
+        }
+    </script>
+</head>
+<body>
+    <h1>Ambit Laughter Detector</h1>
+    <button onclick="startRecording()">Start Recording</button>
+    <button onclick="stopRecording()">Stop Recording</button>
+    <audio/>
+</body>
+</html>
