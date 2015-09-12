@@ -1,15 +1,25 @@
 # ambitserver
 Python Ambit Server - Set up for CentOS 
 
+###Linux environment set up
+
+`yum install gcc`
+
+'yum install python-devel'
+
+'yum install pip'
+
+'yum install python'
+
 ###Initialize virtual environment
 
 `pip install virtualenv`
 
 `virtualenv .venv`
 
-###Linux environment set up
+'source .venv/bin/activate'
 
-`yum install gcc`
+`pip install -r requirements.txt`
 
 ###Launch the app
 

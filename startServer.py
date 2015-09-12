@@ -39,4 +39,4 @@ def doSomething(audio_as_int_array):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, threads=16, port=8000)
+    app.run(port=8000)
