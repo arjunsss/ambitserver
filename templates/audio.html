@@ -24,7 +24,7 @@
            recorder.connect(audio_context.destination);
         }
 
-        var ws = new WebSocket('ws://127.0.0.1:8000/websocket');
+        var ws = new WebSocket('ws://ambitserver.cloudapp.net:8000/websocket');
 
         ws.onopen = function(evt) {
           console.log('Connected to websocket.');
