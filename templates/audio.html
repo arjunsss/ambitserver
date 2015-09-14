@@ -9,11 +9,28 @@
                        navigator.mozGetUserMedia ||
                        navigator.msGetUserMedia);
 
+        var output;
+        var canvas;
+        var incrCanvas;
+        var canvasBuffer;
+        var detectedLaughter;
+        var ws; // Web socket
+
+        window.addEventListener("load", init, false)
+        function init() {
+          output = document.getElementById("output");
+          canvas = document.getElementById( "analyser" );
+          incrCanvas = document.getElementById("incrAnalyser")
+          canvasMinBuffer = new Float32Array(incrCanvas.width)
+          canvasMaxBuffer = new Float32Array(incrCanvas.width)
+          laughArray = new Int8Array(incrCanvas.width)
+        }
+
+
         var recording = false
 
         audio_context = new AudioContext;
         sampleRate = audio_context.sampleRate;
-        console.log(sampleRate)
 
         function initializeRecorder(stream) {
            var audioInput = audio_context.createMediaStreamSource(stream);
@@ -24,15 +41,35 @@
            recorder.connect(audio_context.destination);
         }
 
-        var ws = new WebSocket('ws://ambitserver.cloudapp.net:8000/websocket');
 
-        ws.onopen = function(evt) {
-          console.log('Connected to websocket.');
+        function wsOnError(evt) {
+          console.log("Error")
+          writeToScreen('Error connecting to socket')
+        }
+
+        function wsOnopen(evt) {
+          writeToScreen('Connected to websocket');
           // First message: send the sample rate
           ws.send("sample rate:" + sampleRate);
           navigator.getUserMedia({audio: true, video: false}, initializeRecorder, function(e) {
            console.log('No live audio input: ' + e);
           });
+        }
+
+        function wsOnmessage(evt) {
+          writeToScreen('Message received from server -' + evt.data)
+          if (evt.data == "Start") {
+            detectedLaughter = true
+          } else {
+            detectedLaughter = false
+          }
+        }
+
+        function writeToScreen(message) {
+          var pre = document.createElement("p");
+          pre.style.wordWrap = "break-word";
+          pre.innerHTML = message;
+          output.appendChild(pre);
         }
 
         function convertFloat32ToInt16(buffer) {
@@ -44,26 +81,119 @@
           return buf.buffer;
         }
 
+
+
         function recorderProcess(e) {
             if (recording) {
+                drawBuffer( canvas.width, canvas.height, canvas.getContext('2d'), e.inputBuffer.getChannelData(0) );
+                incrementalDrawBuffer(incrCanvas.width, incrCanvas.height, incrCanvas.getContext('2d'), e.inputBuffer.getChannelData(0));
                 var left = e.inputBuffer.getChannelData(0);
-                ws.send(convertFloat32ToInt16(left));
+                var data = convertFloat32ToInt16(left)
+                ws.send(data);
             }
         }
 
+        function drawBuffer( width, height, context, data ) {
+            var step = Math.ceil( data.length / width );
+            var amp = height / 2;
+            if (detectedLaughter) {
+              context.fillStyle = "green";
+            } else {
+              context.fillStyle = "silver";
+            }
+
+            context.clearRect(0,0,width,height);
+            for(var i=0; i < width; i++){
+                var min = 1.0;
+                var max = -1.0;
+                for (j=0; j<step; j++) {
+                    var datum = data[(i*step)+j];
+                    if (datum < min)
+                        min = datum;
+                    if (datum > max)
+                        max = datum;
+                }
+                context.fillRect(i,(1+min)*amp,1,Math.max(1,(max-min)*amp));
+            }
+        }
+
+
+        function incrementalDrawBuffer(width, height, context, data) {
+          var amp = height/2;
+          context.clearRect(0,0,width,height);
+          for(var i=0;i<(width-1);i++) {
+            canvasMinBuffer[i] = canvasMinBuffer[(i+1)]
+            canvasMaxBuffer[i] = canvasMaxBuffer[(i+1)]
+            laughArray[i] = laughArray[(i+1)]
+            if (laughArray[i] > 0) {
+              context.fillStyle = "green"
+            } else {
+              context.fillStyle = "silver"
+            }
+
+            context.fillRect(i,(1+canvasMinBuffer[i])*amp,1,Math.max(1,(canvasMaxBuffer[i]-canvasMinBuffer[i])*amp));
+          }
+
+          var min = 1.0
+          var max = -1.0
+          for (var i=0;i<data.length;i++) {
+            if (data[i] < min) {
+              min = data[i]
+            }
+            if (data[i] > max) {
+              max = data[i]
+            }
+          }
+
+          var fillStyle; 
+          if (detectedLaughter) {
+            context.fillStyle = "green"
+          } else {
+            context.fillStyle = "silver"
+          }
+          canvasMinBuffer[(width-1)] = min
+          canvasMaxBuffer[(width-1)] = max
+          laughArray[(width-1)] = 1 *  detectedLaughter
+          context.fillRect(width-1, (1+min)*amp, 1, Math.max(1, (max-min)*amp));
+        }
+
+
+
         function startRecording() {
+            ws = new WebSocket('ws://0.0.0.0:8000/websocket');
+            ws.onopen = wsOnopen
+            ws.onmessage = wsOnmessage
+            ws.onerror = wsOnError
+            writeToScreen("Start Recording")
             recording = true
         }
 
         function stopRecording() {
+            writeToScreen("Stop Recording")
+            ws.close()
             recording = false
+        }
+
+        function laughToggle() {
+          if (detectedLaughter) {
+            detectedLaughter = false
+          } else {
+            detectedLaughter = true
+          }
         }
     </script>
 </head>
 <body>
-    <h1>Ambit Laughter Detector</h1>
-    <button onclick="startRecording()">Start Recording</button>
-    <button onclick="stopRecording()">Stop Recording</button>
+    <h1>Ambit Laughter Detectors</h1>
+    <button onclick="startRecording()">Connect and Start Recording</button>
+    <button onclick="stopRecording()">Stop Recording and Disconnect</button>
+    <div>
+    <canvas id="incrAnalyser" width="512" height="200"></canvas>
+    <canvas id="analyser" width="512" height="200"></canvas>
+    </div>
+    <div>
+    </div>
+    <div id="output"></div>
     <audio/>
 </body>
 </html>
