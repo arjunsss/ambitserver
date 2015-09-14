@@ -89,7 +89,15 @@
                 incrementalDrawBuffer(incrCanvas.width, incrCanvas.height, incrCanvas.getContext('2d'), e.inputBuffer.getChannelData(0));
                 var left = e.inputBuffer.getChannelData(0);
                 var data = convertFloat32ToInt16(left)
-                ws.send(data);
+                try {
+                  ws.send(data);  
+                }
+                catch(err) {
+                  recording = false
+                  writeToScreen(err)
+                  strartRecording()
+                }
+                
             }
         }
 
@@ -156,7 +164,6 @@
           laughArray[(width-1)] = 1 *  detectedLaughter
           context.fillRect(width-1, (1+min)*amp, 1, Math.max(1, (max-min)*amp));
         }
-
 
 
         function startRecording() {
