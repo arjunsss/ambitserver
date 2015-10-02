@@ -15,7 +15,9 @@
         var canvasBuffer;
         var detectedLaughter;
         var ws; // Web socket
-
+        var audio_context;
+        var sampleRate;
+        
         window.addEventListener("load", init, false)
         function init() {
           output = document.getElementById("output");
@@ -27,20 +29,22 @@
         }
 
 
-        var recording = false
+        recording = false
 
-        audio_context = new AudioContext;
-        sampleRate = audio_context.sampleRate;
+
 
         function initializeRecorder(stream) {
-           var audioInput = audio_context.createMediaStreamSource(stream);
-           var bufferSize = 4096;
-           var recorder = audio_context.createScriptProcessor(bufferSize, 1, 1);
-           recorder.onaudioprocess = recorderProcess;
-           audioInput.connect(recorder);
-           recorder.connect(audio_context.destination);
-        }
+          audio_context = new AudioContext;
+          sampleRate = audio_context.sampleRate;
+          console.log(audio_context)
 
+          var audioInput = audio_context.createMediaStreamSource(stream);
+          var bufferSize = 4096;
+          var recorder = audio_context.createScriptProcessor(bufferSize, 1, 1);
+          recorder.onaudioprocess = recorderProcess;
+          audioInput.connect(recorder);
+          recorder.connect(audio_context.destination);
+        }
 
         function wsOnError(evt) {
           console.log("Error")
@@ -88,9 +92,9 @@
                 drawBuffer( canvas.width, canvas.height, canvas.getContext('2d'), e.inputBuffer.getChannelData(0) );
                 incrementalDrawBuffer(incrCanvas.width, incrCanvas.height, incrCanvas.getContext('2d'), e.inputBuffer.getChannelData(0));
                 var left = e.inputBuffer.getChannelData(0);
-                var data = convertFloat32ToInt16(left)
+                //var data = convertFloat32ToInt16(left)
                 try {
-                  ws.send(data);  
+                  ws.send(left);  
                 }
                 catch(err) {
                   recording = false

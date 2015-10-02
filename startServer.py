@@ -20,30 +20,33 @@ def webSocket(ws):
    total_msg = ""
    sample_rate = 0
    count = 0
-
+   f = open("test.txt", 'w')
    while True:
       msg = ws.receive()
 
       if first_message and msg is not None: # the first message should be the sample rate
-         #sample_rate = getSampleRate(msg)
+         #sample_rate = msg
+         print(sample_rate)
          first_message = False
          continue
       elif msg is not None:
-         audio_as_int_array = numpy.frombuffer(msg, 'i2')
-         doSomething(audio_as_int_array)
-         # Temporarily to test start/stop of laughter detection
-         count = count + 1
-         if (count % 30 == 0):
+         audio_as_float_array = numpy.frombuffer(msg)
+         isLaughter = doSomething(audio_as_float_array, f)
+
+         if (isLaughter):
             ws.send("Start")
-         if (count % 50 == 0):
+         else:
             ws.send("Stop")
       else:
          break
 
-def doSomething(audio_as_int_array):
-	if audio_as_int_array.size > 0:
-		print(audio_as_int_array)
 
+
+def doSomething(audio_as_int_array, f):
+   if audio_as_int_array.size > 0:
+      f.write(audio_as_int_array)
+      print(audio_as_int_array)
+   return False
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', threads=16, port=8000)
