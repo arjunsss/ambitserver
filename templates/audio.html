@@ -85,21 +85,19 @@
           return buf.buffer;
         }
 
-
-
         function recorderProcess(e) {
             if (recording) {
                 drawBuffer( canvas.width, canvas.height, canvas.getContext('2d'), e.inputBuffer.getChannelData(0) );
                 incrementalDrawBuffer(incrCanvas.width, incrCanvas.height, incrCanvas.getContext('2d'), e.inputBuffer.getChannelData(0));
                 var left = e.inputBuffer.getChannelData(0);
-                //var data = convertFloat32ToInt16(left)
+                var data = convertFloat32ToInt16(left)
                 try {
-                  ws.send(left);  
+                  ws.send(data);
                 }
                 catch(err) {
                   recording = false
                   writeToScreen(err)
-                  strartRecording()
+                  startRecording()
                 }
                 
             }
@@ -168,6 +166,7 @@
           laughArray[(width-1)] = 1 *  detectedLaughter
           context.fillRect(width-1, (1+min)*amp, 1, Math.max(1, (max-min)*amp));
         }
+
 
 
         function startRecording() {

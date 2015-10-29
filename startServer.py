@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 from flask import Flask, render_template
 from flask.ext.uwsgi_websocket import GeventWebSocket
-import numpy
+import numpy as np
+import getDetRes
 
 app = Flask(__name__)
 ws = GeventWebSocket(app)
@@ -19,7 +20,11 @@ def webSocket(ws):
    first_message = True
    total_msg = ""
    sample_rate = 0
-   count = 0
+   dataIndex = 0
+   bufferLen = 4096
+   numBuffers = 12
+   isLaughter = False
+   dataBuffer=np.zeros((numBuffers, bufferLen))
    f = open("test.txt", 'w')
    while True:
       msg = ws.receive()
@@ -30,8 +35,16 @@ def webSocket(ws):
          first_message = False
          continue
       elif msg is not None:
-         audio_as_float_array = numpy.frombuffer(msg)
-         isLaughter = doSomething(audio_as_float_array, f)
+         audio_as_int_array = np.frombuffer(msg, 'i2')
+         print(audio_as_int_array.shape)
+         if (audio_as_int_array.shape[0] == 4096):
+			dataBuffer[dataIndex, :] = audio_as_int_array
+			dataIndex = dataIndex+1
+
+         if (dataIndex == numBuffers):
+         	signal = np.reshape(dataBuffer, (bufferLen*numBuffers, ))
+        	isLaughter = getDetRes.isLaughter(signal)
+        	dataIndex = 0
 
          if (isLaughter):
             ws.send("Start")
