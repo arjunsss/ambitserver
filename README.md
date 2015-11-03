@@ -27,4 +27,6 @@ UWSGI, in order to support websockets must have libffi-devel installed. In order
 
 ###Launch the app
 
-python startServer.py
+.venv/bin/uwsgi --http 0.0.0.0:8000 --http-websockets --master  --threads 16 --wsgi startServer:app -H .venv/
+
+

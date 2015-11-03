@@ -3,10 +3,14 @@ Flask-uWSGI-WebSocket==0.4.4
 Jinja2==2.8
 MarkupSafe==0.23
 Werkzeug==0.10.4
+backports.ssl-match-hostname==3.4.0.2
 gevent==1.0.2
 greenlet==0.4.9
-backports.ssl-match-hostname==3.4.0.2
 itsdangerous==0.24
 numpy==1.9.2
+scikit-learn==0.16.1
+scipy==0.16.0
+sklearn==0.0
+speech-features==0.1
 uWSGI==2.0.11.1
 wsgiref==0.1.2
